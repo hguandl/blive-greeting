@@ -1,0 +1,23 @@
+[package]
+name = "blive-greeting"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+biliup = { git = "https://github.com/biliup/biliup-rs", rev = "b7c9dc3" }
+brotli = "3.4.0"
+bytes = "1"
+tokio-tungstenite = { version = "0.21.0", features = ["rustls-tls-webpki-roots"] }
+
+flate2 = "*"
+futures-util = "*"
+reqwest = { version = "*", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"
+tokio = { version = "*", features = ["full"] }
+tracing = "*"
+tracing-subscriber = { version = "*", features = ["env-filter"] }
+url = "*"
