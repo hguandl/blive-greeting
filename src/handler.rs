@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::SystemTime};
 
 use serde::Deserialize;
-use tokio::sync::mpsc::UnboundedReceiver;
+use tokio::sync::{mpsc::UnboundedReceiver, Mutex};
 use tracing::{debug, error, info};
 
 use crate::{danmu::send_greeting, sub::SubReply};
@@ -10,6 +10,7 @@ pub struct LiveSubHandler<'a> {
     room_id: u32,
     cookies: &'a HashMap<&'a str, &'a str>,
     receiver: UnboundedReceiver<SubReply>,
+    last_greeting: Mutex<SystemTime>,
 }
 
 impl<'a> LiveSubHandler<'a> {
@@ -22,6 +23,7 @@ impl<'a> LiveSubHandler<'a> {
             room_id,
             cookies,
             receiver,
+            last_greeting: Mutex::new(SystemTime::now()),
         }
     }
 }
@@ -55,10 +57,25 @@ impl<'a> LiveSubHandler<'a> {
 
     async fn handle_message(&self, message: &LiveMessage) {
         match message {
-            LiveMessage::Live => match send_greeting(self.cookies, self.room_id).await {
-                Ok(_) => info!("[{}] greeting sent", self.room_id),
-                Err(e) => error!("[{}] send greeting error: {e}", self.room_id),
-            },
+            LiveMessage::Live => {
+                let duration = {
+                    let mut last = self.last_greeting.lock().await;
+                    let now = SystemTime::now();
+                    let duration = now.duration_since(*last).unwrap().as_secs();
+                    *last = now;
+                    duration
+                };
+
+                if duration < 10 {
+                    debug!("[{}] debounce greeting within {duration}s", self.room_id);
+                    return;
+                }
+
+                match send_greeting(self.cookies, self.room_id).await {
+                    Ok(_) => info!("[{}] greeting sent", self.room_id),
+                    Err(e) => error!("[{}] send greeting error: {e}", self.room_id),
+                }
+            }
             _ => debug!("[{}] received {message:?}", self.room_id),
         }
     }
