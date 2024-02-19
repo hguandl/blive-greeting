@@ -37,12 +37,10 @@ impl<'a> LiveSubHandler<'a> {
                         error!("[{}] heartbeat error", self.room_id);
                     }
                 }
-                SubReply::Message(data) => {
-                    match serde_json::from_slice::<serde_json::Value>(&data) {
-                        Ok(s) => self.handle_message(s).await,
-                        Err(e) => error!("[{}] parse message error: {e}", self.room_id),
-                    }
-                }
+                SubReply::Message(data) => match serde_json::from_slice::<LiveMessage>(&data) {
+                    Ok(m) => self.handle_message(&m).await,
+                    Err(e) => error!("[{}] parse message error: {e}", self.room_id),
+                },
                 SubReply::Auth(data) => {
                     if data == r#"{"code":0}"# {
                         info!("[{}] auth OK", self.room_id);
@@ -55,19 +53,13 @@ impl<'a> LiveSubHandler<'a> {
         }
     }
 
-    async fn handle_message(&self, value: serde_json::Value) {
-        let cmd = match value.get("cmd").and_then(|v| v.as_str()) {
-            Some(s) => s.to_string(),
-            None => return error!("[{}] no cmd field", self.room_id),
-        };
-
-        match serde_json::from_value::<LiveMessage>(value) {
-            Ok(LiveMessage::Live) => match send_greeting(self.cookies, self.room_id).await {
+    async fn handle_message(&self, message: &LiveMessage) {
+        match message {
+            LiveMessage::Live => match send_greeting(self.cookies, self.room_id).await {
                 Ok(_) => info!("[{}] greeting sent", self.room_id),
                 Err(e) => error!("[{}] send greeting error: {e}", self.room_id),
             },
-            Ok(_) => debug!("[{}] other message: {cmd}", self.room_id),
-            Err(_) => error!("[{}] unknown message: {cmd}", self.room_id),
+            _ => debug!("[{}] received {message:?}", self.room_id),
         }
     }
 }
@@ -83,14 +75,6 @@ enum LiveMessage {
     Danmu,
     #[serde(rename = "INTERACT_WORD")]
     Interact,
-    #[serde(rename = "NOTICE_MSG")]
-    Notice,
-    #[serde(rename = "ONLINE_RANK_COUNT")]
-    RankCount,
-    #[serde(rename = "ONLINE_RANK_V2")]
-    Rank2,
-    #[serde(rename = "STOP_LIVE_ROOM_LIST")]
-    RoomList,
-    #[serde(rename = "WATCHED_CHANGE")]
-    Change,
+    #[serde(other)]
+    Other,
 }
