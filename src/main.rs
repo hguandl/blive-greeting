@@ -5,6 +5,7 @@ mod live;
 mod sub;
 
 use biliup::credential::login_by_cookies;
+use tracing::error;
 
 use live::connect_room;
 
@@ -20,7 +21,15 @@ async fn main() {
         .await
         .expect("failed to login");
 
-    let results = tokio::join!(connect_room(&bili, 4588774), connect_room(&bili, 21669627));
+    tokio::join!(run(&bili, 4588774), run(&bili, 21669627));
+}
 
-    eprintln!("{:?}", results);
+async fn run(bili: &biliup::bilibili::BiliBili, room_id: u32) {
+    loop {
+        match connect_room(bili, room_id).await {
+            Ok(_) => (),
+            Err(e) => error!("failed to connect room {room_id}: {e}"),
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    }
 }
