@@ -32,7 +32,6 @@ pub trait LiveSubHandler {
                         info!("[{}] auth OK", self.get_room_id());
                     } else {
                         error!("[{}] auth error", self.get_room_id());
-                        return;
                     }
                 }
             }

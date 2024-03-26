@@ -97,8 +97,18 @@ fn decode_bytes(mut data: Bytes, replies: &mut Vec<SubReply>) -> Result<()> {
 
     match (kind, op_code) {
         (0, 5) => replies.push(SubReply::Message(body)),
-        (_, 3) => return Ok(replies.push(SubReply::Heartbeat(body))),
-        (_, 8) => return Ok(replies.push(SubReply::Auth(body))),
+        (_, 3) => {
+            return {
+                replies.push(SubReply::Heartbeat(body));
+                Ok(())
+            }
+        }
+        (_, 8) => {
+            return {
+                replies.push(SubReply::Auth(body));
+                Ok(())
+            }
+        }
         (2, _) => {
             let mut decoder = GzDecoder::new(body.reader());
             let mut output = Vec::new();
