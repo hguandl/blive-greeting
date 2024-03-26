@@ -1,15 +1,11 @@
 mod danmu;
-mod handler;
-mod info;
-mod live;
-mod sub;
+mod greeting_bot;
 
 use biliup::credential::login_by_cookies;
-use handler::LiveGreetingBot;
-use info::bili_cookies;
+use blive_greeting::connect_room;
+use blive_greeting::info::bili_cookies;
+use greeting_bot::LiveGreetingBot;
 use tracing::error;
-
-use live::connect_room;
 
 #[tokio::main]
 async fn main() {

@@ -2,7 +2,7 @@ use std::{collections::HashMap, time::SystemTime};
 
 use anyhow::{anyhow, Result};
 
-use crate::info::bili_client;
+use blive_greeting::info::bili_client;
 
 pub async fn send_greeting(cookies: &HashMap<&str, &str>, room_id: u32) -> Result<()> {
     let timestamp = SystemTime::now()

@@ -4,9 +4,9 @@ use anyhow::{anyhow, Result};
 use futures_util::{future, pin_mut, SinkExt, StreamExt};
 use tokio_tungstenite::connect_async;
 
-use crate::handler::LiveSubHandler;
 use crate::info::{bili_client, get_danmu_info};
 use crate::sub::{auth_sub, heartbeat_sub};
+use crate::LiveSubHandler;
 
 pub async fn connect_room<H: LiveSubHandler>(
     cookies: &HashMap<&str, &str>,
