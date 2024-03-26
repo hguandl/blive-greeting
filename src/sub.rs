@@ -1,4 +1,3 @@
-use anyhow::{bail, Result};
 use brotli::Decompressor;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use flate2::read::GzDecoder;
@@ -6,6 +5,7 @@ use serde_json::json;
 use tokio_tungstenite::tungstenite::Message;
 
 use crate::info::BUVID3;
+use crate::Error;
 
 pub enum SubReply {
     Heartbeat(Bytes),
@@ -13,7 +13,7 @@ pub enum SubReply {
     Auth(Bytes),
 }
 
-pub fn auth_sub(uid: u64, room_id: u32, token: &str) -> Result<Message> {
+pub fn auth_sub(uid: u64, room_id: u32, token: &str) -> Result<Message, Error> {
     let bytes = encode_json(
         json!({
             "uid": uid,
@@ -47,7 +47,7 @@ fn encode_bytes(data: &[u8], op_code: u32) -> Vec<u8> {
     buf.to_vec()
 }
 
-fn encode_json<T>(data: T, op_code: u32) -> Result<Vec<u8>>
+fn encode_json<T>(data: T, op_code: u32) -> Result<Vec<u8>, Error>
 where
     T: serde::Serialize,
 {
@@ -59,30 +59,30 @@ fn encode_str(data: &str, op_code: u32) -> Vec<u8> {
     encode_bytes(data.as_bytes(), op_code)
 }
 
-pub fn decode(data: Vec<u8>) -> Result<Vec<SubReply>> {
+pub fn decode(data: Vec<u8>) -> Result<Vec<SubReply>, Error> {
     let mut replies = Vec::new();
     decode_vec(data, &mut replies)?;
     Ok(replies)
 }
 
-fn decode_vec(data: Vec<u8>, replies: &mut Vec<SubReply>) -> Result<()> {
+fn decode_vec(data: Vec<u8>, replies: &mut Vec<SubReply>) -> Result<(), Error> {
     decode_bytes(Bytes::from(data), replies)
 }
 
-fn decode_bytes(mut data: Bytes, replies: &mut Vec<SubReply>) -> Result<()> {
+fn decode_bytes(mut data: Bytes, replies: &mut Vec<SubReply>) -> Result<(), Error> {
     if data.is_empty() {
         return Ok(());
     }
 
     if data.remaining() < 6 {
-        bail!("invalid length data");
+        return Err(Error::DecodeSub("length"));
     }
 
     let size = data.get_u32() as usize;
     let header_len = data.get_u16() as usize;
 
     if header_len < 16 || data.remaining() < 10 {
-        bail!("incomplete header");
+        return Err(Error::DecodeSub("header"));
     }
 
     let kind = data.get_u16();
@@ -90,7 +90,7 @@ fn decode_bytes(mut data: Bytes, replies: &mut Vec<SubReply>) -> Result<()> {
     let _sequence = data.get_u32();
 
     if data.remaining() < size + 16 - 2 * header_len {
-        bail!("incomplete body")
+        return Err(Error::DecodeSub("body"));
     }
 
     let body = data.slice(header_len - 16..size - header_len);

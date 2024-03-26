@@ -1,15 +1,15 @@
 use std::{collections::HashMap, time::SystemTime};
 
-use anyhow::{anyhow, Result};
-
 use blive_greeting::info::bili_client;
+use blive_greeting::Error::{self, MissingData};
 
-pub async fn send_greeting(cookies: &HashMap<&str, &str>, room_id: u32) -> Result<()> {
+pub async fn send_greeting(cookies: &HashMap<&str, &str>, room_id: u32) -> Result<(), Error> {
     let timestamp = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)?
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
         .as_secs();
 
-    let bili_jct = cookies.get("bili_jct").ok_or(anyhow!("no bili_jct"))?;
+    let bili_jct = cookies.get("bili_jct").ok_or(MissingData("bili_jct"))?;
 
     let client = bili_client(cookies)?;
 

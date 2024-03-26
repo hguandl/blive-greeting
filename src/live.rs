@@ -1,18 +1,18 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
 use futures_util::{future, pin_mut, SinkExt, StreamExt};
 use tokio_tungstenite::connect_async;
 
 use crate::info::{bili_client, get_danmu_info};
 use crate::sub::{auth_sub, heartbeat_sub};
+use crate::Error;
 use crate::LiveSubHandler;
 
 pub async fn connect_room<H: LiveSubHandler + Sync>(
     cookies: &HashMap<&str, &str>,
     room_id: u32,
     handler: H,
-) -> Result<()> {
+) -> Result<(), Error> {
     let client = bili_client(cookies)?;
     let danmu_info = get_danmu_info(&client, room_id).await?;
 
@@ -20,7 +20,7 @@ pub async fn connect_room<H: LiveSubHandler + Sync>(
         .host_list
         .first()
         .map(|h| format!("wss://{}:{}/sub", h.host, h.wss_port))
-        .ok_or(anyhow!("no danmu host found"))?;
+        .ok_or(Error::MissingData("danmu host"))?;
 
     let (ws_stream, _) = connect_async(ws_url).await?;
     let (mut write, mut read) = ws_stream.split();
@@ -28,7 +28,7 @@ pub async fn connect_room<H: LiveSubHandler + Sync>(
     let writer = async {
         let uid: u64 = cookies
             .get("DedeUserID")
-            .ok_or(anyhow!("no uid"))?
+            .ok_or(Error::MissingData("no uid"))?
             .parse()?;
 
         let auth = auth_sub(uid, room_id, &danmu_info.token)?;
@@ -40,7 +40,7 @@ pub async fn connect_room<H: LiveSubHandler + Sync>(
         }
 
         #[allow(unreachable_code)]
-        anyhow::Ok(())
+        Ok::<(), Error>(())
     };
 
     let reader = async {
@@ -51,7 +51,7 @@ pub async fn connect_room<H: LiveSubHandler + Sync>(
             }
         }
 
-        anyhow::Ok(())
+        Ok::<(), Error>(())
     };
 
     pin_mut!(writer, reader);

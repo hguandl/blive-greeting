@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
-use anyhow::{bail, Result};
 use biliup::bilibili::BiliBili;
 use reqwest::header::{HeaderValue, COOKIE};
 use serde::Deserialize;
+
+use crate::Error;
 
 pub const BUVID3: &str = include_str!("../buvid3.txt");
 pub const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36";
@@ -99,7 +100,7 @@ pub fn bili_client(cookies: &HashMap<&str, &str>) -> reqwest::Result<reqwest::Cl
         .build()
 }
 
-pub async fn get_danmu_info(client: &reqwest::Client, room_id: u32) -> Result<DanmuInfo> {
+pub async fn get_danmu_info(client: &reqwest::Client, room_id: u32) -> Result<DanmuInfo, Error> {
     let room_id = room_id.to_string();
 
     client
@@ -117,8 +118,6 @@ pub async fn get_danmu_info(client: &reqwest::Client, room_id: u32) -> Result<Da
 
     match response {
         BiliResponse::Ok(info) => Ok(info),
-        BiliResponse::Err(code, message) => {
-            bail!("failed to get danmu info: {message} ({code})")
-        }
+        BiliResponse::Err(code, message) => Err(crate::Error::BiliResponse(code, message)),
     }
 }

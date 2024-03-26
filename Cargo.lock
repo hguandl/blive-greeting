@@ -235,7 +235,6 @@ checksum = "ed570934406eb16438a4e976b1b4500774099c13b8cb96eec99f620f05090ddf"
 name = "blive-greeting"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "biliup",
  "brotli",
  "bytes",
@@ -244,6 +243,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
  "tokio-tungstenite",
  "tracing",
