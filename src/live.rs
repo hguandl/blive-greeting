@@ -8,7 +8,7 @@ use crate::info::{bili_client, get_danmu_info};
 use crate::sub::{auth_sub, heartbeat_sub};
 use crate::LiveSubHandler;
 
-pub async fn connect_room<H: LiveSubHandler>(
+pub async fn connect_room<H: LiveSubHandler + Sync>(
     cookies: &HashMap<&str, &str>,
     room_id: u32,
     handler: H,
