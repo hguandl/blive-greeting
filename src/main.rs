@@ -5,6 +5,7 @@ mod live;
 mod sub;
 
 use biliup::credential::login_by_cookies;
+use info::bili_cookies;
 use tracing::error;
 
 use live::connect_room;
@@ -26,7 +27,8 @@ async fn main() {
 
 async fn run(bili: &biliup::bilibili::BiliBili, room_id: u32) {
     loop {
-        match connect_room(bili, room_id).await {
+        let cookies = bili_cookies(bili);
+        match connect_room(&cookies, room_id).await {
             Ok(_) => (),
             Err(e) => error!("failed to connect room {room_id}: {e}"),
         }

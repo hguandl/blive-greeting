@@ -1,16 +1,16 @@
+use std::collections::HashMap;
+
 use anyhow::{anyhow, Result};
-use biliup::bilibili::BiliBili;
 use futures_util::{future, pin_mut, SinkExt, StreamExt};
 use tokio_tungstenite::connect_async;
 use tracing::error;
 
 use crate::handler::LiveSubHandler;
-use crate::info::{bili_client, bili_cookies, get_danmu_info};
+use crate::info::{bili_client, get_danmu_info};
 use crate::sub::{auth_sub, heartbeat_sub};
 
-pub async fn connect_room(bili: &BiliBili, room_id: u32) -> Result<()> {
-    let cookies = bili_cookies(bili);
-    let client = bili_client(&cookies)?;
+pub async fn connect_room(cookies: &HashMap<&str, &str>, room_id: u32) -> Result<()> {
+    let client = bili_client(cookies)?;
     let danmu_info = get_danmu_info(&client, room_id).await?;
 
     let ws_url = danmu_info
@@ -54,7 +54,7 @@ pub async fn connect_room(bili: &BiliBili, room_id: u32) -> Result<()> {
         }
     });
 
-    let mut sub_handler = LiveSubHandler::new(room_id, &cookies, rx);
+    let mut sub_handler = LiveSubHandler::new(room_id, cookies, rx);
     let handler = sub_handler.run();
 
     pin_mut!(writer, reader, handler);
