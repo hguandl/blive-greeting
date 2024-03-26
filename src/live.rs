@@ -3,13 +3,16 @@ use std::collections::HashMap;
 use anyhow::{anyhow, Result};
 use futures_util::{future, pin_mut, SinkExt, StreamExt};
 use tokio_tungstenite::connect_async;
-use tracing::error;
 
 use crate::handler::LiveSubHandler;
 use crate::info::{bili_client, get_danmu_info};
 use crate::sub::{auth_sub, heartbeat_sub};
 
-pub async fn connect_room(cookies: &HashMap<&str, &str>, room_id: u32) -> Result<()> {
+pub async fn connect_room<H: LiveSubHandler>(
+    cookies: &HashMap<&str, &str>,
+    room_id: u32,
+    handler: H,
+) -> Result<()> {
     let client = bili_client(cookies)?;
     let danmu_info = get_danmu_info(&client, room_id).await?;
 
@@ -20,7 +23,7 @@ pub async fn connect_room(cookies: &HashMap<&str, &str>, room_id: u32) -> Result
         .ok_or(anyhow!("no danmu host found"))?;
 
     let (ws_stream, _) = connect_async(ws_url).await?;
-    let (mut write, read) = ws_stream.split();
+    let (mut write, mut read) = ws_stream.split();
 
     let writer = async {
         let uid: u64 = cookies
@@ -40,26 +43,19 @@ pub async fn connect_room(cookies: &HashMap<&str, &str>, room_id: u32) -> Result
         anyhow::Ok(())
     };
 
-    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
-
-    let reader = read.for_each(|message| async {
-        match message {
-            Ok(message) => {
-                let data = message.into_data();
-                if let Err(e) = crate::sub::decode_vec(data, &tx) {
-                    error!("[{room_id}] decode: {e}");
-                }
+    let reader = async {
+        while let Some(message) = read.next().await {
+            let data = message?.into_data();
+            for reply in crate::sub::decode(data)? {
+                handler.handle_reply(reply).await;
             }
-            Err(e) => error!("[{room_id}] read: {e}"),
         }
-    });
 
-    let mut sub_handler = LiveSubHandler::new(room_id, cookies, rx);
-    let handler = sub_handler.run();
+        anyhow::Ok(())
+    };
 
-    pin_mut!(writer, reader, handler);
-    let trigger = future::select(writer, reader);
-    future::select(trigger, handler).await;
+    pin_mut!(writer, reader);
+    future::select(writer, reader).await;
 
     Ok(())
 }

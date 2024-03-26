@@ -1,58 +1,60 @@
 use std::{collections::HashMap, time::SystemTime};
 
 use serde::Deserialize;
-use tokio::sync::{mpsc::UnboundedReceiver, Mutex};
+use tokio::sync::Mutex;
 use tracing::{debug, error, info};
 
 use crate::{danmu::send_greeting, sub::SubReply};
 
-pub struct LiveSubHandler<'a> {
+pub trait LiveSubHandler {
+    fn get_room_id(&self) -> u32;
+
+    async fn handle_message(&self, message: &LiveMessage);
+
+    async fn handle_reply(&self, reply: SubReply) {
+        match reply {
+            SubReply::Heartbeat(data) => {
+                if data == [0, 0, 0, 1].as_slice() {
+                    debug!("[{}] heartbeat OK", self.get_room_id());
+                } else {
+                    error!("[{}] heartbeat error", self.get_room_id());
+                }
+            }
+            SubReply::Message(data) => match serde_json::from_slice::<LiveMessage>(&data) {
+                Ok(m) => self.handle_message(&m).await,
+                Err(e) => error!("[{}] parse message error: {e}", self.get_room_id()),
+            },
+            SubReply::Auth(data) => {
+                if data == r#"{"code":0}"# {
+                    info!("[{}] auth OK", self.get_room_id());
+                } else {
+                    error!("[{}] auth error", self.get_room_id());
+                    return;
+                }
+            }
+        }
+    }
+}
+
+pub struct LiveGreetingBot<'a> {
     room_id: u32,
     cookies: &'a HashMap<&'a str, &'a str>,
-    receiver: UnboundedReceiver<SubReply>,
     last_greeting: Mutex<SystemTime>,
 }
 
-impl<'a> LiveSubHandler<'a> {
-    pub fn new(
-        room_id: u32,
-        cookies: &'a HashMap<&str, &str>,
-        receiver: UnboundedReceiver<SubReply>,
-    ) -> Self {
+impl<'a> LiveGreetingBot<'a> {
+    pub fn new(room_id: u32, cookies: &'a HashMap<&str, &str>) -> Self {
         Self {
             room_id,
             cookies,
-            receiver,
             last_greeting: Mutex::new(SystemTime::now()),
         }
     }
 }
 
-impl<'a> LiveSubHandler<'a> {
-    pub async fn run(&mut self) {
-        while let Some(reply) = self.receiver.recv().await {
-            match reply {
-                SubReply::Heartbeat(data) => {
-                    if data == [0, 0, 0, 1].as_slice() {
-                        debug!("[{}] heartbeat OK", self.room_id);
-                    } else {
-                        error!("[{}] heartbeat error", self.room_id);
-                    }
-                }
-                SubReply::Message(data) => match serde_json::from_slice::<LiveMessage>(&data) {
-                    Ok(m) => self.handle_message(&m).await,
-                    Err(e) => error!("[{}] parse message error: {e}", self.room_id),
-                },
-                SubReply::Auth(data) => {
-                    if data == r#"{"code":0}"# {
-                        info!("[{}] auth OK", self.room_id);
-                    } else {
-                        error!("[{}] auth error", self.room_id);
-                        break;
-                    }
-                }
-            }
-        }
+impl<'a> LiveSubHandler for LiveGreetingBot<'a> {
+    fn get_room_id(&self) -> u32 {
+        self.room_id
     }
 
     async fn handle_message(&self, message: &LiveMessage) {
@@ -83,7 +85,7 @@ impl<'a> LiveSubHandler<'a> {
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(tag = "cmd")]
-enum LiveMessage {
+pub enum LiveMessage {
     #[serde(rename = "LIVE")]
     Live,
     #[serde(rename = "PREPARING")]

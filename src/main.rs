@@ -5,6 +5,7 @@ mod live;
 mod sub;
 
 use biliup::credential::login_by_cookies;
+use handler::LiveGreetingBot;
 use info::bili_cookies;
 use tracing::error;
 
@@ -28,7 +29,8 @@ async fn main() {
 async fn run(bili: &biliup::bilibili::BiliBili, room_id: u32) {
     loop {
         let cookies = bili_cookies(bili);
-        match connect_room(&cookies, room_id).await {
+        let handler = LiveGreetingBot::new(room_id, &cookies);
+        match connect_room(&cookies, room_id, handler).await {
             Ok(_) => (),
             Err(e) => error!("failed to connect room {room_id}: {e}"),
         }

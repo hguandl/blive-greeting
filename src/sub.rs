@@ -3,7 +3,6 @@ use brotli::Decompressor;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use flate2::read::GzDecoder;
 use serde_json::json;
-use tokio::sync::mpsc::UnboundedSender;
 use tokio_tungstenite::tungstenite::Message;
 
 use crate::info::BUVID3;
@@ -60,11 +59,17 @@ fn encode_str(data: &str, op_code: u32) -> Vec<u8> {
     encode_bytes(data.as_bytes(), op_code)
 }
 
-pub fn decode_vec(data: Vec<u8>, sender: &UnboundedSender<SubReply>) -> Result<()> {
-    decode_bytes(Bytes::from(data), sender)
+pub fn decode(data: Vec<u8>) -> Result<Vec<SubReply>> {
+    let mut replies = Vec::new();
+    decode_vec(data, &mut replies)?;
+    Ok(replies)
 }
 
-pub fn decode_bytes(mut data: Bytes, sender: &UnboundedSender<SubReply>) -> Result<()> {
+fn decode_vec(data: Vec<u8>, replies: &mut Vec<SubReply>) -> Result<()> {
+    decode_bytes(Bytes::from(data), replies)
+}
+
+fn decode_bytes(mut data: Bytes, replies: &mut Vec<SubReply>) -> Result<()> {
     if data.is_empty() {
         return Ok(());
     }
@@ -91,27 +96,27 @@ pub fn decode_bytes(mut data: Bytes, sender: &UnboundedSender<SubReply>) -> Resu
     let body = data.slice(header_len - 16..size - header_len);
 
     match (kind, op_code) {
-        (0, 5) => sender.send(SubReply::Message(body))?,
-        (_, 3) => return Ok(sender.send(SubReply::Heartbeat(body))?),
-        (_, 8) => return Ok(sender.send(SubReply::Auth(body))?),
+        (0, 5) => replies.push(SubReply::Message(body)),
+        (_, 3) => return Ok(replies.push(SubReply::Heartbeat(body))),
+        (_, 8) => return Ok(replies.push(SubReply::Auth(body))),
         (2, _) => {
             let mut decoder = GzDecoder::new(body.reader());
             let mut output = Vec::new();
             std::io::copy(&mut decoder, &mut output)?;
-            return decode_vec(output, sender);
+            return decode_vec(output, replies);
         }
         (3, _) => {
             let mut decompressor = Decompressor::new(body.reader(), 4096);
             let mut output = Vec::new();
             std::io::copy(&mut decompressor, &mut output)?;
-            return decode_vec(output, sender);
+            return decode_vec(output, replies);
         }
         _ => return Ok(()),
     }
 
     data.advance(size - header_len);
     if data.has_remaining() {
-        return decode_bytes(data, sender);
+        return decode_bytes(data, replies);
     }
 
     Ok(())
