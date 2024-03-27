@@ -1,6 +1,6 @@
 use std::{collections::HashMap, time::SystemTime};
 
-use blive_greeting::{LiveMessage, LiveSubHandler};
+use blive_greeting::{LiveMessage, LiveSubHandler, Result};
 use tokio::sync::Mutex;
 use tracing::{debug, error, info};
 
@@ -27,7 +27,7 @@ impl<'a> LiveSubHandler for LiveGreetingBot<'a> {
         self.room_id
     }
 
-    async fn handle_message(&self, message: &LiveMessage) {
+    async fn handle_message(&self, message: &LiveMessage) -> Result<()> {
         match message {
             LiveMessage::Live => {
                 let duration = {
@@ -40,15 +40,20 @@ impl<'a> LiveSubHandler for LiveGreetingBot<'a> {
 
                 if duration < 10 {
                     debug!("[{}] debounce greeting within {duration}s", self.room_id);
-                    return;
+                    return Ok(());
                 }
 
                 match send_greeting(self.cookies, self.room_id).await {
                     Ok(_) => info!("[{}] greeting sent", self.room_id),
                     Err(e) => error!("[{}] send greeting error: {e}", self.room_id),
                 }
+
+                Ok(())
             }
-            _ => debug!("[{}] received {message:?}", self.room_id),
+            _ => {
+                debug!("[{}] received {message:?}", self.room_id);
+                Ok(())
+            }
         }
     }
 }

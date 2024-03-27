@@ -51,7 +51,7 @@ pub async fn connect_room<H: LiveSubHandler + Sync>(
         while let Some(message) = read.next().await {
             let data = message?.into_data();
             for reply in crate::sub::decode(data)? {
-                handler.handle_reply(reply).await;
+                handler.handle_reply(reply).await?;
             }
         }
 

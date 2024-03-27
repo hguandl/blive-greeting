@@ -16,8 +16,14 @@ pub enum Error {
     #[error("unexpected API response ({0}): {1}")]
     BiliResponse(i32, String),
 
+    #[error("cancellation")]
+    Cancellation,
+
     #[error("invalid sub: {0}")]
     DecodeSub(&'static str),
+
+    #[error("[{0}] failed to handle {1}")]
+    Handler(u32, &'static str),
 
     #[error(transparent)]
     Io(#[from] std::io::Error),
@@ -37,3 +43,5 @@ pub enum Error {
     #[error(transparent)]
     Tungstenite(#[from] tokio_tungstenite::tungstenite::Error),
 }
+
+pub type Result<T> = std::result::Result<T, Error>;
