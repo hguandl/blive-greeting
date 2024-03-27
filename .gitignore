@@ -3,6 +3,7 @@
 
 /target
 /target.tmp
+/target.nosync
 
 # Created by https://www.toptal.com/developers/gitignore/api/linux,macos,windows,rust
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,macos,windows,rust
