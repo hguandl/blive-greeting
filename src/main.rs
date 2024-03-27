@@ -24,7 +24,7 @@ async fn main() {
 
 async fn run(bili: &biliup::bilibili::BiliBili, room_id: u32) {
     loop {
-        let cookies = bili_cookies(bili);
+        let cookies = bili_cookies(&bili.login_info);
         let handler = LiveGreetingBot::new(room_id, &cookies);
         match connect_room(&cookies, room_id, handler).await {
             Ok(_) => (),

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use biliup::bilibili::BiliBili;
+use biliup::credential::LoginInfo;
 use reqwest::header::{HeaderValue, COOKIE};
 use serde::Deserialize;
 
@@ -52,9 +52,8 @@ where
     }
 }
 
-pub fn bili_cookies(bili: &BiliBili) -> HashMap<&str, &str> {
-    let cookies = match bili
-        .login_info
+pub fn bili_cookies(login_info: &LoginInfo) -> HashMap<&str, &str> {
+    let cookies = match login_info
         .cookie_info
         .get("cookies")
         .and_then(|c| c.as_array())
