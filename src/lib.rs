@@ -1,9 +1,11 @@
+mod buvid;
 mod handler;
 mod live;
 mod sub;
 
 pub mod info;
 
+pub use buvid::gen_buvid3;
 pub use handler::{LiveMessage, LiveSubHandler};
 pub use live::connect_room;
 

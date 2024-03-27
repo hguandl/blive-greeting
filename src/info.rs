@@ -6,7 +6,6 @@ use serde::Deserialize;
 
 use crate::Error;
 
-pub const BUVID3: &str = include_str!("../buvid3.txt");
 pub const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36";
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -52,7 +51,7 @@ where
     }
 }
 
-pub fn bili_cookies(login_info: &LoginInfo) -> HashMap<&str, &str> {
+pub fn bili_cookies<'a>(login_info: &'a LoginInfo, buvid: &'a str) -> HashMap<&'a str, &'a str> {
     let cookies = match login_info
         .cookie_info
         .get("cookies")
@@ -75,7 +74,7 @@ pub fn bili_cookies(login_info: &LoginInfo) -> HashMap<&str, &str> {
         })
         .collect();
 
-    cookie_map.insert("buvid3", BUVID3.trim());
+    cookie_map.insert("buvid3", buvid);
     cookie_map
 }
 

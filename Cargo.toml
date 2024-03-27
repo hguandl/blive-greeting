@@ -9,6 +9,7 @@ edition = "2021"
 biliup = { git = "https://github.com/biliup/biliup-rs", rev = "b7c9dc3" }
 brotli = "3.4.0"
 bytes = "1"
+rand = "0.8.5"
 thiserror = "1.0"
 tokio-tungstenite = { version = "0.21.0", features = ["rustls-tls-webpki-roots"] }
 

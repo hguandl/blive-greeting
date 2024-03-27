@@ -4,7 +4,6 @@ use flate2::read::GzDecoder;
 use serde_json::json;
 use tokio_tungstenite::tungstenite::Message;
 
-use crate::info::BUVID3;
 use crate::Error;
 
 pub enum SubReply {
@@ -13,13 +12,13 @@ pub enum SubReply {
     Auth(Bytes),
 }
 
-pub fn auth_sub(uid: u64, room_id: u32, token: &str) -> Result<Message, Error> {
+pub fn auth_sub(uid: u64, room_id: u32, buvid: &str, token: &str) -> Result<Message, Error> {
     let bytes = encode_json(
         json!({
             "uid": uid,
             "roomid": room_id,
             "protover": 3,
-            "buvid": BUVID3.trim(),
+            "buvid": buvid,
             "platform": "web",
             "type": 2,
             "key": token,

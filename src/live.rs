@@ -31,7 +31,11 @@ pub async fn connect_room<H: LiveSubHandler + Sync>(
             .ok_or(Error::MissingData("no uid"))?
             .parse()?;
 
-        let auth = auth_sub(uid, room_id, &danmu_info.token)?;
+        let buvid = cookies
+            .get("buvid3")
+            .ok_or(Error::MissingData("no buvid"))?;
+
+        let auth = auth_sub(uid, room_id, buvid, &danmu_info.token)?;
         write.send(auth).await?;
 
         loop {
