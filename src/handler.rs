@@ -25,6 +25,11 @@ pub trait LiveSubHandler {
                     }
                 }
                 SubReply::Message(data) => {
+                    #[cfg(feature = "debug-danmu")]
+                    {
+                        let v = serde_json::from_slice::<Value>(&data)?;
+                        println!("{}", serde_json::to_string(&v)?);
+                    }
                     let m = serde_json::from_slice::<LiveMessage>(&data)?;
                     self.handle_message(&m).await?;
                 }

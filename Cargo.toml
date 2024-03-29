@@ -22,3 +22,6 @@ tokio = { version = "*", features = ["full"] }
 tracing = "*"
 tracing-subscriber = { version = "*", features = ["env-filter"] }
 url = "*"
+
+[features]
+debug-danmu = []
