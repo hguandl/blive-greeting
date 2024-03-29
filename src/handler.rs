@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, info};
 
@@ -61,7 +61,7 @@ pub enum LiveMessage {
     Other,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct DanmuMessage {
     pub content: String,
     pub uid: u64,
@@ -70,7 +70,8 @@ pub struct DanmuMessage {
     pub ts: u64,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FanMedal {
     pub level: u64,
     pub name: String,
