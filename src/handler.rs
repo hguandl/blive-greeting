@@ -66,6 +66,17 @@ pub struct DanmuMessage {
     pub content: String,
     pub uid: u64,
     pub uname: String,
+    pub medal: Option<FanMedal>,
+    pub ts: u64,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct FanMedal {
+    pub level: u64,
+    pub name: String,
+    pub target_name: String,
+    pub room_id: u64,
+    pub target_id: u64,
 }
 
 impl<'de> Deserialize<'de> for DanmuMessage {
@@ -84,23 +95,67 @@ impl<'de> Deserialize<'de> for DanmuMessage {
             .ok_or(serde::de::Error::custom("cannot parse str `info[1]`"))?
             .to_string();
 
-        let user = info[2]
-            .as_array()
-            .ok_or(serde::de::Error::custom("cannot parse array `info[2]`"))?;
-
-        let uid = user[0]
+        let uid = info[2][0]
             .as_u64()
             .ok_or(serde::de::Error::custom("cannot parse u64 `info[2][0]`"))?;
 
-        let uname = user[1]
+        let uname = info[2][1]
             .as_str()
             .ok_or(serde::de::Error::custom("cannot parse str `info[2][1]`"))?
             .to_string();
+
+        let medal: Option<FanMedal> = Deserialize::deserialize(&info[3])
+            .map_err(|e| serde::de::Error::custom(format!("info[3]: {}", e)))?;
+
+        let ts = info[9]["ts"]
+            .as_u64()
+            .ok_or(serde::de::Error::custom("cannot parse u64 `info[9][1]`"))?;
 
         Ok(Self {
             content,
             uid,
             uname,
+            medal,
+            ts,
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for FanMedal {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let root: Value = Deserialize::deserialize(deserializer)?;
+
+        let level = root[0]
+            .as_u64()
+            .ok_or(serde::de::Error::custom("cannot parse u64 `[0]`"))?;
+
+        let name = root[1]
+            .as_str()
+            .ok_or(serde::de::Error::custom("cannot parse str `[1]`"))?
+            .to_string();
+
+        let target_name = root[2]
+            .as_str()
+            .ok_or(serde::de::Error::custom("cannot parse str `[2]`"))?
+            .to_string();
+
+        let room_id = root[3]
+            .as_u64()
+            .ok_or(serde::de::Error::custom("cannot parse u64 `[3]`"))?;
+
+        let target_id = root[12]
+            .as_u64()
+            .ok_or(serde::de::Error::custom("cannot parse u64 `[12]`"))?;
+
+        Ok(Self {
+            level,
+            name,
+            target_name,
+            room_id,
+            target_id,
         })
     }
 }
