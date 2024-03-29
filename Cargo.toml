@@ -15,7 +15,7 @@ tokio-tungstenite = { version = "0.21.0", features = ["rustls-tls-webpki-roots"]
 
 flate2 = "*"
 futures-util = "*"
-reqwest = { version = "*", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "*", default-features = false, features = ["rustls-tls", "cookies", "json", "multipart"] }
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 tokio = { version = "*", features = ["full"] }
