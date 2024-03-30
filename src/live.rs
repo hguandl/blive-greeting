@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use futures_util::{future, pin_mut, SinkExt, StreamExt};
+use futures_util::{SinkExt, StreamExt};
 use tokio_tungstenite::connect_async;
 
 use crate::info::{bili_client, get_danmu_info};
@@ -58,8 +58,8 @@ pub async fn connect_room<H: LiveSubHandler + Sync>(
         Ok::<(), Error>(())
     };
 
-    pin_mut!(writer, reader);
-    future::select(writer, reader).await;
-
-    Ok(())
+    tokio::select! {
+        r = writer => r,
+        r = reader => r,
+    }
 }
