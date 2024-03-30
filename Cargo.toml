@@ -18,7 +18,7 @@ futures-util = "*"
 reqwest = { version = "*", default-features = false, features = ["rustls-tls", "cookies", "json", "multipart"] }
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
-tokio = { version = "*", features = ["full"] }
+tokio = { version = "*", features = ["macros", "rt", "sync"] }
 tracing = "*"
 tracing-subscriber = { version = "*", features = ["env-filter"] }
 url = "*"
