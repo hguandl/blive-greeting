@@ -105,8 +105,7 @@ impl<'de> Deserialize<'de> for DanmuMessage {
             .ok_or(serde::de::Error::custom("cannot parse str `info[2][1]`"))?
             .to_string();
 
-        let medal: Option<FanMedal> = Deserialize::deserialize(&info[3])
-            .map_err(|e| serde::de::Error::custom(format!("info[3]: {}", e)))?;
+        let medal: Option<FanMedal> = Deserialize::deserialize(&info[3]).or(Ok(None))?;
 
         let ts = info[9]["ts"]
             .as_u64()
