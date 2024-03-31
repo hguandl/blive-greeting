@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use futures_util::{SinkExt, StreamExt};
 use tokio_tungstenite::connect_async;
 
-use crate::info::{bili_client, get_danmu_info};
+use crate::info::{bili_client, get_room_info};
 use crate::sub::{auth_sub, heartbeat_sub};
 use crate::Error;
 use crate::LiveSubHandler;
@@ -14,7 +14,7 @@ pub async fn connect_room<H: LiveSubHandler + Sync>(
     handler: H,
 ) -> Result<(), Error> {
     let client = bili_client(cookies)?;
-    let danmu_info = get_danmu_info(&client, room_id).await?;
+    let (play_info, danmu_info) = get_room_info(&client, room_id).await?;
 
     let ws_url = danmu_info
         .host_list
@@ -35,7 +35,7 @@ pub async fn connect_room<H: LiveSubHandler + Sync>(
             .get("buvid3")
             .ok_or(Error::MissingData("no buvid"))?;
 
-        let auth = auth_sub(uid, room_id, buvid, &danmu_info.token)?;
+        let auth = auth_sub(uid, play_info.room_id, buvid, &danmu_info.token)?;
         write.send(auth).await?;
 
         loop {

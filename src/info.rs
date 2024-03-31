@@ -22,10 +22,25 @@ pub struct DanmuHost {
     pub ws_port: u16,
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct PlayInfo {
+    pub room_id: u32,
+    pub short_id: u32,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum BiliResponse<T> {
     Ok(T),
     Err(i32, String),
+}
+
+impl<T> BiliResponse<T> {
+    pub fn ok(self) -> Result<T, Error> {
+        match self {
+            BiliResponse::Ok(data) => Ok(data),
+            BiliResponse::Err(code, message) => Err(Error::BiliResponse(code, message)),
+        }
+    }
 }
 
 impl<'de, T> Deserialize<'de> for BiliResponse<T>
@@ -98,24 +113,43 @@ pub fn bili_client(cookies: &HashMap<&str, &str>) -> reqwest::Result<reqwest::Cl
         .build()
 }
 
-pub async fn get_danmu_info(client: &reqwest::Client, room_id: u32) -> Result<DanmuInfo, Error> {
-    let room_id = room_id.to_string();
+type RoomInfo = (PlayInfo, DanmuInfo);
 
+pub async fn get_room_info(client: &reqwest::Client, room_id: u32) -> Result<RoomInfo, Error> {
     client
         .get(format!("https://live.bilibili.com/{room_id}"))
         .send()
         .await?;
 
-    let response = client
+    let play_info = client
+        .get("https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo")
+        .query(&[
+            ("room_id", format!("{room_id}").as_str()),
+            ("protocol", "0"),
+            ("format", "0"),
+            ("codec", "0"),
+        ])
+        .send()
+        .await?
+        .json::<BiliResponse<PlayInfo>>()
+        .await?
+        .ok()?;
+
+    if play_info.room_id != room_id {
+        tracing::info!("[{room_id}] real room id: {}", play_info.room_id);
+    }
+
+    let danmu_info = client
         .get("https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo")
-        .query(&[("id", room_id.as_str()), ("type", "0")])
+        .query(&[
+            ("id", format!("{}", play_info.room_id).as_str()),
+            ("type", "0"),
+        ])
         .send()
         .await?
         .json::<BiliResponse<DanmuInfo>>()
-        .await?;
+        .await?
+        .ok()?;
 
-    match response {
-        BiliResponse::Ok(info) => Ok(info),
-        BiliResponse::Err(code, message) => Err(crate::Error::BiliResponse(code, message)),
-    }
+    Ok((play_info, danmu_info))
 }
