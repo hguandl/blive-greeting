@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-biliup = { git = "https://github.com/biliup/biliup-rs", rev = "5b74de4" }
+biliup = { git = "https://github.com/biliup/biliup-rs", tag = "v0.2.0"}
 brotli = "3.4.0"
 bytes = "1"
 rand = "0.8.5"
