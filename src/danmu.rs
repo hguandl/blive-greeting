@@ -1,7 +1,7 @@
 use std::{collections::HashMap, time::SystemTime};
 
-use blive_greeting::info::bili_client;
-use blive_greeting::Error::{self, MissingData};
+use crate::info::bili_client;
+use crate::Error::{self, MissingData};
 
 pub async fn send_greeting(cookies: &HashMap<&str, &str>, room_id: u32) -> Result<(), Error> {
     let timestamp = SystemTime::now()

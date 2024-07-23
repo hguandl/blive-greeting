@@ -1,4 +1,3 @@
-mod danmu;
 mod greeting_bot;
 
 use biliup::credential::login_by_cookies;

@@ -4,7 +4,7 @@ use blive_greeting::{LiveMessage, LiveSubHandler, Result};
 use tokio::sync::Mutex;
 use tracing::{debug, error, info};
 
-use crate::danmu::send_greeting;
+use blive_greeting::danmu::send_greeting;
 
 pub struct LiveGreetingBot<'a> {
     room_id: u32,

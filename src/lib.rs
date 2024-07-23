@@ -3,6 +3,7 @@ mod handler;
 mod live;
 mod sub;
 
+pub mod danmu;
 pub mod info;
 
 pub use buvid::gen_buvid3;
