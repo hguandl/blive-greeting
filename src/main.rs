@@ -18,7 +18,7 @@ async fn main() {
         .await
         .expect("failed to login");
 
-    tokio::join!(run(&bili, 4588774), run(&bili, 21669627));
+    tokio::join!(run(&bili, 4588774), run(&bili, 21669627), run(&bili, 33989));
 }
 
 async fn run(bili: &biliup::bilibili::BiliBili, room_id: u32) {
