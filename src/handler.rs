@@ -47,7 +47,7 @@ pub trait LiveSubHandler {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
-#[serde(tag = "cmd")]
+#[serde(tag = "cmd", content = "data")]
 pub enum LiveMessage {
     #[serde(rename = "LIVE")]
     Live,
@@ -57,8 +57,10 @@ pub enum LiveMessage {
     Danmu(DanmuMessage),
     #[serde(rename = "INTERACT_WORD")]
     Interact,
-    #[serde(other)]
-    Other,
+    #[serde(rename = "ROOM_CHANGE")]
+    RoomChange(RoomChangeData),
+    #[serde(untagged)]
+    Other(Value),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -68,6 +70,15 @@ pub struct DanmuMessage {
     pub uname: String,
     pub medal: Option<FanMedal>,
     pub ts: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RoomChangeData {
+    pub area_id: u64,
+    pub area_name: String,
+    pub parent_area_id: u64,
+    pub parent_area_name: String,
+    pub title: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
